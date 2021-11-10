@@ -10,5 +10,6 @@ output: html_document
 ### We will Knit the RMD to a html file next 
 Then push index.html to the github.io repo.
 
-
+Check out my Rshiny App!
+https://reuvenderner.shinyapps.io/BeersAnalysis/
 
