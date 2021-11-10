@@ -8,3 +8,5 @@ navbar:
       href: AboutMe.html
     - text: "Case Study One"
       href: Case_Study_One.html
+    - text: "RShiny_App"
+      href: RShiny_App.html
