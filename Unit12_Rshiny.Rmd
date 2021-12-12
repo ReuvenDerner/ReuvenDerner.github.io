@@ -1,0 +1,84 @@
+---
+title: "testShiny"
+author: "Reuven"
+date: "11/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Rshiny Test
+This is a test of an RShiny app in RMarkdown
+
+```{r }
+library(shiny)
+library(ggplot2)
+library(ggsn)
+library(usmap)
+library(dplyr)
+library(tidyverse)
+
+
+#Read in Data Set
+
+beers = read_csv(url("https://raw.githubusercontent.com/BivinSadler/MSDS_6306_Doing-Data-Science/Master/Unit%208%20and%209%20Case%20Study%201/Beers.csv"))
+breweries = read_csv(url("https://raw.githubusercontent.com/BivinSadler/MSDS_6306_Doing-Data-Science/Master/Unit%208%20and%209%20Case%20Study%201/Breweries.csv"))
+
+full_data = merge(beers,breweries,by.y="Brew_ID",by.x="Brewery_id") %>%
+  mutate(fips = fips(trimws(State)))
+
+Aledata = full_data %>% mutate(IPA = grepl('IPA',full_data$Style), Ale  = grepl('Ale',full_data$Style)) %>% filter(IPA | Ale) %>% select(Ale,IPA,ABV,IBU, Style)
+Aledata = Aledata %>% mutate(Alcohol_by_Volume = scale(ABV),biterness_scale = scale(IBU)) #Get Ranges of ABV and IBU data
+
+# Define UI for random distribution app ----
+ui <- fluidPage(
+  selectInput("Ind","Indipendent Variable",choices = names(full_data)),
+  selectInput('Dep','Dependent Variable',choices = names(full_data)),
+  selectInput("State","State Variable",choices = unique(full_data$State), selected = "CA"),
+  plotOutput("BoxPlot"),
+  plotOutput('Hist'),
+  plotOutput("Scatter"),
+  plotOutput("Ale")
+)
+
+server <- function(input, output, session) {
+
+  data1 <- reactive({
+    input$Ind
+  })
+  data2 <- reactive({
+    input$Dep
+  })
+  state <- reactive({
+    input$State
+  })
+  output$BoxPlot <- renderPlot({
+    boxplot(get(data2()) ~ get(data1()) , data=full_data)
+        #attempt at filtering dataset and utilizing select cause application to break: full_data %>% filter(State == input$v_select) %>% 
+  })
+
+  output$Hist <- renderPlot({
+    req(data1())
+    hist(full_data[[data1()]])
+    #attempt at filtering dataset and utilizing select cause application to break: full_data %>% filter(State == input$v_select) %>% 
+  }) 
+  output$Scatter <- renderPlot({
+    full_data %>%
+  ggplot(aes(x = ABV, y = IBU, fill = "sample")) +
+  geom_point() + geom_smooth(method =  lm) +
+  ggtitle("Relationship Between IBU and ABV")
+    #attempt at filtering dataset and utilizing select cause application to break: full_data %>% filter(State == input$v_select) %>% 
+  }) 
+  output$Ale <- renderPlot({
+    Aledata %>% ggplot(mapping = aes(x=Alcohol_by_Volume,y=biterness_scale,color=Ale)) + geom_point(position = 'jitter') +
+scale_color_manual(values=c("chartreuse4", "deepskyblue4")) +
+ggtitle("Ale Classification - Alcohol Content and Bitterness")
+  })
+
+}
+
+shinyApp(ui, server)
+
+```
